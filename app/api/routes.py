@@ -3,11 +3,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from app.db.session import get_db
-from app.models.abastecimento import Abastecimento
+from app.models.abastecimento import Abastecimento, TipoCombustivel
 from app.schemas.abastecimento import AbastecimentoCreate, AbastecimentoResponse
 
 router = APIRouter()
 
+MEDIAS_PRECO = {
+    TipoCombustivel.GASOLINA: 5.50,
+    TipoCombustivel.ETANOL: 3.80,
+    TipoCombustivel.DIESEL: 6.00
+}
 @router.post("/abastecimentos/", response_model=AbastecimentoResponse, status_code=201)
 async def create_abastecimento(
     abastecimento_in: AbastecimentoCreate,
@@ -16,6 +21,18 @@ async def create_abastecimento(
     #1. Transformar o Schema (Pydantic) em Model (SQLAlchemy)
     # O model_dump converte o imput em um dicionário python
     novo_abastecimento = Abastecimento(**abastecimento_in.model_dump())
+
+    #Regra de Negócio: Anomalia de Preço (>media + 25%)
+    #Busca acontece baseada na média do tipo de combustível enviado
+    media_historica = MEDIAS_PRECO.get(abastecimento_in.tipo_combustivel)
+
+    #Calculamos o teto aceitavel
+    limite_aceitavel = media_historica * 1.25
+
+    if abastecimento_in.preco_por_litro > limite_aceitavel:
+        novo_abastecimento.improper_data = True
+    else:
+        novo_abastecimento.improper_data = False
 
     #2. Adiciona no banco
     db.add(novo_abastecimento)

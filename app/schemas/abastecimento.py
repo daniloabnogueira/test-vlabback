@@ -12,6 +12,7 @@ class AbastecimentoBase(BaseModel):
     cpf_motorista: str
 
 class AbastecimentoCreate(AbastecimentoBase):
+    data_hora: datetime
     #Validador personalizado para limpar e verficar CPF
     @field_validator('cpf_motorista')
     def validar_cpf(cls, v: str):
