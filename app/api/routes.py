@@ -1,5 +1,4 @@
 from typing import Optional
-from datetime import date
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -66,4 +65,15 @@ async def list_abastecimentos(
    #Executar
     result = await db.execute(query)
 
+    return result.scalars().all()
+
+@router.get("/motorista/{cpf}/historico", response_model=list[AbastecimentoResponse])
+async def get_historico_motorista(
+    cpf: str,
+    db: AsyncSession = Depends(get_db)
+):
+    """Retorna todos os abastecimentos de um motorista específico."""
+
+    query = select(Abastecimento).where(Abastecimento.cpf_motorista == cpf)
+    result = await db.execute(query)
     return result.scalars().all()
