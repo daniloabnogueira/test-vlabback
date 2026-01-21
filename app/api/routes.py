@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
+from typing import Optional
+from datetime import date
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -44,6 +46,24 @@ async def create_abastecimento(
     return novo_abastecimento
 
 @router.get("/abastecimentos/", response_model=list[AbastecimentoResponse])
-async def list_abastecimentos(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Abastecimento))
+async def list_abastecimentos(
+    page: int = Query(1, ge=1, description="Número da página (min:1)"),
+    size: int = Query(10, ge=1, le=100, description="Itens por página (max: 100)"),
+    tipo_combustivel: Optional[TipoCombustivel] = None,
+    db: AsyncSession = Depends(get_db)
+):
+    #Base da Query
+    query = select(Abastecimento)
+
+    #Aplicar filtro de combustivel (se foi mandado pelo usuario)
+    if tipo_combustivel:
+        query = query.where(Abastecimento.tipo_combustivel == tipo_combustivel)
+    
+    #Paginação (pular os itens das páginas anteriores)
+    offset = (page - 1) * size
+    query = query.offset(offset).limit(size)
+
+   #Executar
+    result = await db.execute(query)
+
     return result.scalars().all()
