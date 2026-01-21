@@ -16,12 +16,26 @@ class AbastecimentoCreate(AbastecimentoBase):
     @field_validator('cpf_motorista')
     def validar_cpf(cls, v: str):
         #1. Remove tudo que não for número(pontos e traços)
-        cpf_limpo = re.sub(r'[^0-9]', '', v)
+        cpf = re.sub(r'[^0-9]', '', v)
 
-        #2. Verifica se sobrou algo ou se tem tamanho errado
-        if not cpf_limpo or len(cpf_limpo) != 11:
-            raise ValueError('CPF inválido: Deve conter 11 digitos numéricos')
-        return cpf_limpo
+        #2. Chegacagem primária: Tamanho e sequência repetias
+        if len(cpf) !=11 or cpf == cpf[0] * len(cpf):
+            raise ValueError('CPF inválido: Formato incorreto')
+        
+        #3. Cálculo do 1 digito verificador
+        soma = sum(int(cpf[i]) * (10-i) for i in range(9))
+        resto = (soma * 10 ) % 11
+        if resto == 10: resto = 0
+        if resto != int(cpf[9]):
+            raise ValueError('CPF inválido: Digitos verificadores não conferem')
+        
+        #4. Calculo do 2 digito verificador
+        soma = sum(int(cpf[i]) * (11-i) for i in range(10))
+        resto = (soma * 10) % 11
+        if resto == 10: resto = 0
+        if resto != int(cpf[10]):
+            raise ValueError('CPF inválido: Dígitos verificadores não conferem')
+        return cpf
         
 
 class AbastecimentoResponse(AbastecimentoBase):
