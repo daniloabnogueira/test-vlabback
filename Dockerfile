@@ -14,4 +14,5 @@ RUN apt-get update && apt-get install -y libpq-dev && rm -rf /var/lib/apt/lists/
 COPY --from=builder /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 COPY . . 
-CMD ["uvicorn", "app.main:app", "--host","0.0.0.0", "--port", "8000"]
+#Roda as migrações (upgrade head) e DEPOIS inicia o servidor
+CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
