@@ -9,3 +9,5 @@ psycopg2-binary
 httpx
 faker
 requests
+pytest
+pytest-asyncio

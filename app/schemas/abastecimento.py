@@ -1,6 +1,6 @@
 import re
 from datetime import datetime
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from app.models.abastecimento import TipoCombustivel
 
 class AbastecimentoBase(BaseModel):
@@ -44,5 +44,4 @@ class AbastecimentoResponse(AbastecimentoBase):
     data_hora: datetime
     improper_data: bool
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

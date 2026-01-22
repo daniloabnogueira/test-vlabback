@@ -5,3 +5,4 @@ venv/
 .vscode/
 .idea/
 postgres_data
+.pytest_cache/
