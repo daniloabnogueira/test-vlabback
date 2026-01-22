@@ -1,7 +1,7 @@
 import enum
 from datetime import datetime 
 from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, Enum
-from app.models.model_base import Base
+from app.db.base import Base
 
 class TipoCombustivel(str, enum.Enum):
     GASOLINA = "GASOLINA" 

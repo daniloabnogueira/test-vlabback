@@ -6,6 +6,8 @@ from sqlalchemy.future import select
 from app.db.session import get_db
 from app.models.abastecimento import Abastecimento, TipoCombustivel
 from app.schemas.abastecimento import AbastecimentoCreate, AbastecimentoResponse
+from app.api.deps import get_current_user 
+from app.models.usuario import Usuario
 
 router = APIRouter()
 
@@ -17,7 +19,8 @@ MEDIAS_PRECO = {
 @router.post("/abastecimentos/", response_model=AbastecimentoResponse, status_code=201)
 async def create_abastecimento(
     abastecimento_in: AbastecimentoCreate,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
 ):
     #1. Transformar o Schema (Pydantic) em Model (SQLAlchemy)
     # O model_dump converte o imput em um dicionário python

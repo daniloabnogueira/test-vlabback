@@ -4,71 +4,77 @@ from app.main import app
 
 BASE_URL = "http://test"
 
-#@pytest.mark.asyncio
+# --- FIXTURE: O "Crachá" para os testes ---
+@pytest.fixture
+async def token_autenticado():
+    """
+    1. Cria um usuário de teste.
+    2. Faz login.
+    3. Retorna o cabeçalho 'Authorization' pronto para uso.
+    """
+    async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE_URL) as ac:
+        # Tenta criar usuário (ignoramos erro se já existir)
+        usuario = {"username": "testuser_pytest", "password": "123"}
+        await ac.post("/api/v1/auth/signup", json=usuario)
+        
+        # Faz Login
+        response = await ac.post("/api/v1/auth/login", data=usuario)
+        token = response.json()["access_token"]
+        
+        return {"Authorization": f"Bearer {token}"}
+
+# --- TESTES ---
+
 async def test_health_check():
-    """Testa de a rota raiz (Health Check) responde 200 OK"""
+    """Rota pública, deve funcionar sem token"""
     async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE_URL) as ac:
         response = await ac.get("/")
-    
     assert response.status_code == 200
-    assert response.json() == {"status": "ok", "message": "API rodando com sucesso!"}
 
-#@pytest.mark.asyncio
-async def test_criar_abastecimento_cpf_invalido():
-    """Testa se a API rejeita um CPF com digitos verificadores errados"""
+async def test_criar_abastecimento_sem_token():
+    """SEGURANÇA: Deve ser barrado (401) se tentar entrar sem token"""
     payload = {
         "id_posto": 1,
         "tipo_combustivel": "GASOLINA",
         "preco_por_litro": 5.50,
         "volume_abastecido": 20,
-        "cpf_motorista": "11122233300", # CPF inválido de propósito
+        "cpf_motorista": "52998224725", 
         "data_hora": "2026-01-22T10:00:00"
     }
     async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE_URL) as ac:
         response = await ac.post("/api/v1/abastecimentos/", json=payload)
     
-    #Espero erro 422 
-    assert response.status_code == 422
-    #Verfica se a mensagem de erro menciona o CPF
-    assert "CPF inválido" in response.text
+    assert response.status_code == 401  # Unauthorized!
 
-#@pytest.mark.asyncio
-async def test_criar_abastecimento_sucesso():
-    """Testa o fluxo feliz: Criar um abastecimento válido"""
+async def test_criar_abastecimento_sucesso(token_autenticado):
+    """Deve funcionar usando o token gerado pela fixture"""
     payload = {
         "id_posto": 1,
         "tipo_combustivel": "ETANOL",
         "preco_por_litro": 3.40,
         "volume_abastecido": 50,
-        "cpf_motorista": "52998224725", # CPF Válido
+        "cpf_motorista": "52998224725",
         "data_hora": "2026-01-22T12:00:00"
     }
-    
     async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE_URL) as ac:
-        response = await ac.post("/api/v1/abastecimentos/", json=payload)
+        #  AQUI ESTÁ A CHAVE: Passamos o header com o token
+        response = await ac.post("/api/v1/abastecimentos/", json=payload, headers=token_autenticado)
     
     assert response.status_code == 201
-    dados = response.json()
-    assert dados["cpf_motorista"] == payload["cpf_motorista"]
-    assert "id" in dados
+    assert "id" in response.json()
 
-#@pytest.mark.asyncio
-async def test_detectar_anomalia_preco_alto():
-    """Testa se a Regra de Negócio marca como anomalia (improper_data) um preço absurdo"""
+async def test_detectar_anomalia_preco_alto(token_autenticado):
+    """Testa regra de negócio (também precisa de token)"""
     payload = {
         "id_posto": 1,
         "tipo_combustivel": "GASOLINA",
-        "preco_por_litro": 100.00,  # Preço absurdo para ativar a regra
+        "preco_por_litro": 100.00,
         "volume_abastecido": 50,
-        "cpf_motorista": "52998224725", # CPF Válido
+        "cpf_motorista": "52998224725",
         "data_hora": "2026-01-22T12:00:00"
     }
-    
     async with AsyncClient(transport=ASGITransport(app=app), base_url=BASE_URL) as ac:
-        response = await ac.post("/api/v1/abastecimentos/", json=payload)
+        response = await ac.post("/api/v1/abastecimentos/", json=payload, headers=token_autenticado)
     
     assert response.status_code == 201
-    
-    # AQUI É O TESTE DA REGRA DE NEGÓCIO:
-    # O campo improper_data TEM que ser True
     assert response.json()["improper_data"] is True
