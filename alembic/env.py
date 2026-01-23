@@ -6,11 +6,8 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
-
 from app.core.config import settings
 from app.db.base import Base
-from app.models.abastecimento import Abastecimento
-from app.models.usuario import Usuario
 
 config = context.config
 
@@ -21,6 +18,7 @@ target_metadata = Base.metadata
 
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 
+
 def run_migrations_offline() -> None:
     """Rodar migrações no modo 'offline'."""
     url = config.get_main_option("sqlalchemy.url")
@@ -28,17 +26,19 @@ def run_migrations_offline() -> None:
         url=url,
         target_metadata=target_metadata,
         literal_binds=True,
-        dialect_opts={"paramstyle": "named"}
+        dialect_opts={"paramstyle": "named"},
     )
 
     with context.begin_transaction():
         context.run_migrations()
+
 
 def do_run_migrations(connection: Connection) -> None:
     context.configure(connection=connection, target_metadata=target_metadata)
 
     with context.begin_transaction():
         context.run_migrations()
+
 
 async def run_migrations_online() -> None:
     """Rodar migrações no modo 'online'(conectado ao banco)."""
@@ -52,6 +52,7 @@ async def run_migrations_online() -> None:
         await connection.run_sync(do_run_migrations)
 
     await connectable.dispose()
+
 
 if context.is_offline_mode():
     run_migrations_offline()

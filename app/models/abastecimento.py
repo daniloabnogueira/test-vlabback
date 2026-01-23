@@ -1,12 +1,16 @@
 import enum
-from datetime import datetime 
-from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, Enum
+from datetime import datetime
+
+from sqlalchemy import Boolean, Column, DateTime, Enum, Float, Integer, String
+
 from app.db.base import Base
 
+
 class TipoCombustivel(str, enum.Enum):
-    GASOLINA = "GASOLINA" 
+    GASOLINA = "GASOLINA"
     ETANOL = "ETANOL"
     DIESEL = "DIESEL"
+
 
 class Abastecimento(Base):
     __tablename__ = "abastecimentos"

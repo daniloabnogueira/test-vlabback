@@ -14,7 +14,7 @@ services:
   
   db:
     image: postgres:15-alpine
-    container_name: trasporte_db
+    container_name: transporte_db
     environment:
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password
@@ -28,6 +28,36 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+  # 🎨 FRONTEND (Streamlit)
+  frontend:
+    image: python:3.11-slim
+    container_name: transporte_front
+    working_dir: /app
+    ports:
+      - "3782:8501"
+    volumes:
+      # Mapeia apenas a pasta frontend para a raiz do container
+      - ./frontend:/app
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/transporte_db
+    depends_on:
+      - db
+    # Instala libs e roda o dashboard
+    command: sh -c "pip install streamlit pandas sqlalchemy psycopg2-binary && streamlit run dashboard.py"
+
+  # 🤖 LOAD TESTER (Robô Automático - Requisito do PDF)
+  load_tester:
+    image: python:3.11-slim
+    container_name: transporte_load
+    working_dir: /app
+    volumes:
+      - .:/app
+    environment:
+      - API_URL=http://api:8000/api/v1
+    depends_on:
+      - api
+    # Loop infinito a cada 30s
+    command: sh -c "pip install requests faker && while true; do python load_data.py; echo '😴 Dormindo 30s...'; sleep 30; done"
 
 volumes:
   postgres_data:
