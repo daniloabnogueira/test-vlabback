@@ -10,10 +10,18 @@ from app.models.abastecimento import Abastecimento, TipoCombustivel
 from app.models.usuario import Usuario
 from app.schemas.abastecimento import (AbastecimentoCreate,
                                        AbastecimentoResponse)
-# Importa o Service novo 👇
+
 from app.services.abastecimento import AbastecimentoService
 
 router = APIRouter()
+
+# 1. ✅ BÔNUS: Health Check 
+@router.get("/health", status_code=200)
+async def health_check():
+    """
+    Endpoint para monitoramento da saúde da API.
+    """
+    return {"status": "ok", "service": "V-Lab Transport API", "version": "1.0.0"}
 
 
 @router.post("/abastecimentos/", response_model=AbastecimentoResponse, status_code=201)
